@@ -140,6 +140,7 @@ namespace SAM.Picker
 
             this.RefreshGames();
             this._RefreshGamesButton.Enabled = true;
+            this.unlockAllGames.Enabled = true;
             this.DownloadNextLogo();
         }
 
@@ -512,6 +513,45 @@ namespace SAM.Picker
 
             // Compatibility with _GameListView SearchForVirtualItemEventHandler (otherwise _SearchGameTextBox loose focus on KeyUp)
             this._SearchGameTextBox.Focus();
+        }
+
+        private void unlockAllGames_Click(object sender, EventArgs e)
+        {
+            if (MessageBox.Show(
+                "This will open and close A LOT of windows.\n\nIn your case, it could be " + Games.Count + " windows.\n\nWhile this shouldn't cause a performance drop, it might get annoying if you're trying to do something.\n\nIs this OK?",
+                "Warning",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Warning) != DialogResult.No)
+            {
+                unlockAllProgress.Visible = true;
+                unlockAllProgress.Value = 0;
+                unlockAllProgress.Maximum = Games.Count;
+
+                foreach (var Game in Games)
+                {
+                    unlockAllProgress.Value++;
+                    try
+                    {
+                        var process = Process.Start("SAM.Game.exe", Game.Id.ToString(CultureInfo.InvariantCulture) + " auto");
+
+                        if (process != null && process.HasExited != true)
+                        {
+                            process.WaitForExit();
+                        }
+                    }
+                    catch (Win32Exception)
+                    {
+                        MessageBox.Show(
+                            this,
+                            "Failed to start SAM.Game.exe.",
+                            "Error",
+                            MessageBoxButtons.OK,
+                            MessageBoxIcon.Error);
+                    }
+                }
+
+                unlockAllProgress.Visible = false;
+            }
         }
 
         private void OnGameListViewDrawItem(object sender, DrawListViewItemEventArgs e)
